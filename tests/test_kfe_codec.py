@@ -96,12 +96,14 @@ def make_dummy_cv2(frames_to_capture=1, stored_frames=None):
         def release(self):
             pass
 
+
     writer_instances = []
 
     def make_writer(*a, **k):
         w = DummyWriter()
         writer_instances.append(w)
         return w
+
 
     dummy_cv2 = types.SimpleNamespace(
         VideoCapture=lambda device: DummyCap(device),
@@ -113,13 +115,17 @@ def make_dummy_cv2(frames_to_capture=1, stored_frames=None):
         waitKey=lambda *a, **k: None,
         destroyAllWindows=lambda: None,
         VideoWriter_fourcc=lambda *a: 0,
+
         VideoWriter=make_writer,
         writer_instances=writer_instances,
+
     )
     return dummy_cv2
 
 
 def test_capture_command(monkeypatch, tmp_path):
+
+
     import kfe_codec
 
     dummy_cv2 = make_dummy_cv2(frames_to_capture=2)
@@ -134,6 +140,8 @@ def test_capture_command(monkeypatch, tmp_path):
 
 
 def test_display_command(monkeypatch, tmp_path):
+
+
     import kfe_codec
 
     data = b'x' * 100
@@ -155,4 +163,5 @@ def test_display_command(monkeypatch, tmp_path):
         kfe_codec.main(['display', enc, '--fps', '1', '--output', str(video_out)])
         assert dummy_cv2.writer_instances
         assert dummy_cv2.writer_instances[0].written
+
 

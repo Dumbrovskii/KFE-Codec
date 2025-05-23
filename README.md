@@ -7,11 +7,12 @@ from the provided technical specification.
 
 
 The codec stores data as a series of *frames*. Each frame represents a
-3840×2160 RGB image where bytes from the input file fill the pixel data in
-sequence. Because each pixel contains three bytes, the frame size is
-``3840 × 2160 × 3 = 24 883 200`` bytes. Frames are padded with zeroes to reach
-this size and are stored sequentially in a custom binary container with a
-small header. No compression or encryption is applied.
+3840×2160 image with **three bytes per pixel**. The implementation uses an
+RGB layout, so every pixel consists of red, green, and blue components.
+Because each pixel contains three bytes, the frame size is ``3840 × 2160 × 3 =
+24 883 200`` bytes. Frames are padded with zeroes to reach this size and are
+stored sequentially in a custom binary container with a small header. No
+compression or encryption is applied.
 
 
 ## Usage
