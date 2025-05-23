@@ -112,7 +112,6 @@ def capture(output_path: str, *, device: int = 0, frames: int = 30) -> None:
     if not cap.isOpened():
         raise RuntimeError(f'Unable to open capture device {device}')
 
-\
     try:
         with open(output_path, 'wb') as fout:
             _write_header(fout, FRAME_SIZE * frames, frames)
@@ -130,9 +129,9 @@ def capture(output_path: str, *, device: int = 0, frames: int = 30) -> None:
 
             for _ in range(captured, frames):
                 fout.write(bytes(FRAME_SIZE))
-    finally:
+    finally:  # ensure device released
         cap.release()
-\
+
     logger.info('Capture complete')
 
 
