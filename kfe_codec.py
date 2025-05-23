@@ -1,9 +1,14 @@
 """Simple binary <-> KFE codec implementation.
 
 This module provides functions to encode arbitrary binary data into a
+
 visual KFE container format and decode it back.  Each frame represents
 a 3840x2160 RGB image (three bytes per pixel) that directly stores a
 segment of the input data without compression.
+
+visual KFE container format and decode it back. The format stores data
+in frames of 3840x2160 bytes (one byte per pixel).
+
 """
 
 import argparse
@@ -16,6 +21,7 @@ from typing import BinaryIO
 # Constants for frame size
 WIDTH = 3840
 HEIGHT = 2160
+
 # Each pixel is encoded as three bytes (RGB)
 BYTES_PER_PIXEL = 3
 FRAME_SIZE = WIDTH * HEIGHT * BYTES_PER_PIXEL
@@ -46,12 +52,6 @@ def _read_header(inp: BinaryIO):
 
 
 def encode(input_path: str, output_path: str) -> None:
-    """Encode a binary file into KFE format.
-
-    The input data is divided into chunks of ``FRAME_SIZE`` bytes.  Each chunk
-    is written as a raw 4K RGB frame in the output container.  Partial frames
-    are padded with zeroes.
-    """
     logger.info('Encoding %s to %s', input_path, output_path)
     data_size = os.path.getsize(input_path)
     frame_count = math.ceil(data_size / FRAME_SIZE)
@@ -70,7 +70,11 @@ def encode(input_path: str, output_path: str) -> None:
 
 
 def decode(input_path: str, output_path: str) -> None:
+
     """Decode a KFE container back into its original binary form."""
+
+    """Decode a KFE file back into its original binary form."""
+
     logger.info('Decoding %s to %s', input_path, output_path)
     with open(input_path, 'rb') as fin:
         data_size, frame_count = _read_header(fin)
