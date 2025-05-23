@@ -43,8 +43,8 @@ def test_cli():
         dst = os.path.join(tmp, 'd.bin')
         with open(src, 'wb') as f:
             f.write(data)
-        subprocess.check_call(['python', 'kfe_codec.py', 'encode', src, enc])
-        subprocess.check_call(['python', 'kfe_codec.py', 'decode', enc, dst])
+        subprocess.check_call([sys.executable, 'kfe_codec.py', 'encode', src, enc])
+        subprocess.check_call([sys.executable, 'kfe_codec.py', 'decode', enc, dst])
         with open(dst, 'rb') as f:
             assert f.read() == data
 
