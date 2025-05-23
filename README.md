@@ -5,15 +5,13 @@ capable of storing arbitrary binary data in a visual container format and
 restoring it back without loss. The implementation follows the requirements
 from the provided technical specification.
 
-The codec stores data as a series of *frames* where each frame represents a
 
-3840×2160 RGB image (three bytes per pixel).  Pixels are filled sequentially
-with the input data. Frames are stored in a custom binary container with a
+The codec stores data as a series of *frames*. Each frame represents a
+3840×2160 RGB image where bytes from the input file fill the pixel data in
+sequence. Because each pixel contains three bytes, the frame size is
+``3840 × 2160 × 3 = 24 883 200`` bytes. Frames are padded with zeroes to reach
+this size and are stored sequentially in a custom binary container with a
 small header. No compression or encryption is applied.
-
-3840×2160 image. Each pixel encodes one byte of the original data. Frames are
-stored in a custom binary container with a small header. No compression or
-encryption is applied.
 
 
 ## Usage
