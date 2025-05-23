@@ -112,23 +112,27 @@ def capture(output_path: str, *, device: int = 0, frames: int = 30) -> None:
     if not cap.isOpened():
         raise RuntimeError(f'Unable to open capture device {device}')
 
-    with open(output_path, 'wb') as fout:
-        _write_header(fout, FRAME_SIZE * frames, frames)
-        captured = 0
-        while captured < frames:
-            ret, frame = cap.read()
-            if not ret:
-                logger.warning('Capture failed at frame %d', captured)
-                break
-            frame = cv2.resize(frame, (WIDTH, HEIGHT))
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            data = frame.tobytes()
-            fout.write(data)
-            captured += 1
-        cap.release()
+\
+    try:
+        with open(output_path, 'wb') as fout:
+            _write_header(fout, FRAME_SIZE * frames, frames)
+            captured = 0
+            while captured < frames:
+                ret, frame = cap.read()
+                if not ret:
+                    logger.warning('Capture failed at frame %d', captured)
+                    break
+                frame = cv2.resize(frame, (WIDTH, HEIGHT))
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                data = frame.tobytes()
+                fout.write(data)
+                captured += 1
 
-        for _ in range(captured, frames):
-            fout.write(bytes(FRAME_SIZE))
+            for _ in range(captured, frames):
+                fout.write(bytes(FRAME_SIZE))
+    finally:
+        cap.release()
+\
     logger.info('Capture complete')
 
 
