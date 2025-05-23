@@ -17,7 +17,8 @@ compression or encryption is applied.
 
 ## Usage
 
-The command line interface supports two operations: `encode` and `decode`.
+The command line interface supports four operations: `encode`, `decode`,
+`capture` and `display`.
 
 ```bash
 # Encode a binary file to the custom .kfe container
@@ -25,6 +26,14 @@ python kfe_codec.py encode input.bin output.kfe
 
 # Decode a previously encoded container back to its original binary form
 python kfe_codec.py decode input.kfe restored.bin
+```
+
+```bash
+# Capture 60 frames from webcam 0 and store in container
+python kfe_codec.py capture capture.kfe --device 0 --frames 60
+
+# Display a container in a window or write it to a video file
+python kfe_codec.py display capture.kfe --fps 30
 ```
 
 Use the `-v` option for verbose logging.
@@ -39,3 +48,9 @@ pytest
 
 The tests verify that encoding followed by decoding yields the original data
 for both small and multi-frame inputs.
+
+## Dependencies
+
+The CLI relies on `opencv-python` and `numpy` for capture and display
+functionality. These packages are not required for basic encoding/decoding but
+must be installed to use the `capture` or `display` commands.

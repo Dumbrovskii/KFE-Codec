@@ -102,6 +102,74 @@ def decode(input_path: str, output_path: str) -> None:
     logger.info('Decoding complete')
 
 
+def capture(output_path: str, *, device: int = 0, frames: int = 30) -> None:
+    """Capture frames from a video device and store them in KFE format."""
+
+    import cv2
+
+    logger.info('Capturing %d frame(s) from device %d to %s', frames, device, output_path)
+    cap = cv2.VideoCapture(device)
+    if not cap.isOpened():
+        raise RuntimeError(f'Unable to open capture device {device}')
+
+    with open(output_path, 'wb') as fout:
+        _write_header(fout, FRAME_SIZE * frames, frames)
+        captured = 0
+        while captured < frames:
+            ret, frame = cap.read()
+            if not ret:
+                logger.warning('Capture failed at frame %d', captured)
+                break
+            frame = cv2.resize(frame, (WIDTH, HEIGHT))
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            data = frame.tobytes()
+            fout.write(data)
+            captured += 1
+        cap.release()
+
+        for _ in range(captured, frames):
+            fout.write(bytes(FRAME_SIZE))
+    logger.info('Capture complete')
+
+
+def display(
+    input_path: str,
+    *,
+    output: str | None = None,
+    fps: int = 30,
+    window: str = 'KFE Display',
+) -> None:
+    """Display a KFE container or optionally write it to a video file."""
+
+    import cv2
+    import numpy as np
+
+    logger.info('Displaying %s', input_path)
+    with open(input_path, 'rb') as fin:
+        _data_size, frame_count = _read_header(fin)
+        writer = None
+        if output:
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            writer = cv2.VideoWriter(output, fourcc, fps, (WIDTH, HEIGHT))
+        for _ in range(frame_count):
+            frame_bytes = fin.read(FRAME_SIZE)
+            if len(frame_bytes) < FRAME_SIZE:
+                raise ValueError('Incomplete frame data')
+            arr = np.frombuffer(frame_bytes, dtype='uint8').reshape((HEIGHT, WIDTH, CHANNELS))
+            arr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+            if writer:
+                writer.write(arr)
+            else:
+                cv2.imshow(window, arr)
+                cv2.waitKey(int(1000 / fps))
+
+        if writer:
+            writer.release()
+        else:
+            cv2.destroyAllWindows()
+    logger.info('Display complete')
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Simple binary <-> KFE codec')
     subparsers = parser.add_subparsers(dest='command', required=True)
@@ -114,6 +182,17 @@ def main(argv=None):
     dec.add_argument('input', help='Input KFE file')
     dec.add_argument('output', help='Output binary file')
 
+    cap_cmd = subparsers.add_parser('capture', help='Capture from video device to KFE')
+    cap_cmd.add_argument('output', help='Output KFE file')
+    cap_cmd.add_argument('--device', type=int, default=0, help='Capture device ID')
+    cap_cmd.add_argument('--frames', type=int, default=30, help='Number of frames to capture')
+
+    disp = subparsers.add_parser('display', help='Display KFE container')
+    disp.add_argument('input', help='Input KFE file')
+    disp.add_argument('--output', help='Optional video output file')
+    disp.add_argument('--fps', type=int, default=30, help='Frames per second')
+    disp.add_argument('--window', default='KFE Display', help='Display window name')
+
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
 
     args = parser.parse_args(argv)
@@ -123,6 +202,10 @@ def main(argv=None):
         encode(args.input, args.output)
     elif args.command == 'decode':
         decode(args.input, args.output)
+    elif args.command == 'capture':
+        capture(args.output, device=args.device, frames=args.frames)
+    elif args.command == 'display':
+        display(args.input, output=args.output, fps=args.fps, window=args.window)
 
 
 if __name__ == '__main__':
