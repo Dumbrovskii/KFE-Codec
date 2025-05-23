@@ -1,8 +1,10 @@
 """Simple binary <-> KFE codec implementation.
 
 This module provides functions to encode arbitrary binary data into a
+
 visual KFE container format and decode it back. The format stores data
 in frames of 3840x2160 RGB pixels (three bytes per pixel).
+
 """
 
 import argparse
@@ -15,12 +17,14 @@ from typing import BinaryIO
 # Constants for frame size
 WIDTH = 3840
 HEIGHT = 2160
+
 CHANNELS = 3  # RGB
 FRAME_SIZE = WIDTH * HEIGHT * CHANNELS  # bytes per frame
 
 # Header format for the container
 # magic(4s) width(uint32) height(uint32) channels(uint32) data_size(uint64) frame_count(uint32)
 HEADER_FORMAT = '<4sIIIQI'
+
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 MAGIC = b'KFE0'
 
@@ -28,9 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 def _write_header(out: BinaryIO, data_size: int, frame_count: int) -> None:
+
     header = struct.pack(
         HEADER_FORMAT, MAGIC, WIDTH, HEIGHT, CHANNELS, data_size, frame_count
     )
+
     out.write(header)
 
 
@@ -38,6 +44,7 @@ def _read_header(inp: BinaryIO):
     header_data = inp.read(HEADER_SIZE)
     if len(header_data) != HEADER_SIZE:
         raise ValueError('Incomplete KFE header')
+
     magic, width, height, channels, data_size, frame_count = struct.unpack(
         HEADER_FORMAT, header_data
     )
@@ -47,12 +54,15 @@ def _read_header(inp: BinaryIO):
         or height != HEIGHT
         or channels != CHANNELS
     ):
+
         raise ValueError('Invalid KFE file')
     return data_size, frame_count
 
 
 def encode(input_path: str, output_path: str) -> None:
+
     """Encode a binary file into KFE format."""
+
     logger.info('Encoding %s to %s', input_path, output_path)
     data_size = os.path.getsize(input_path)
     frame_count = math.ceil(data_size / FRAME_SIZE)
@@ -71,7 +81,9 @@ def encode(input_path: str, output_path: str) -> None:
 
 
 def decode(input_path: str, output_path: str) -> None:
+
     """Decode a KFE file back into its original binary form."""
+
     logger.info('Decoding %s to %s', input_path, output_path)
     with open(input_path, 'rb') as fin:
         data_size, frame_count = _read_header(fin)
