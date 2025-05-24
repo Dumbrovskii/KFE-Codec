@@ -197,10 +197,13 @@ def main(argv=None):
     disp.add_argument('--fps', type=int, default=30, help='Frames per second')
     disp.add_argument('--window', default='KFE Display', help='Display window name')
 
-    lb = subparsers.add_parser('loopback', help='Run HDMI loopback demo')
+
+    lb = subparsers.add_parser('
+                               back', help='Run HDMI loopback demo')
     lb.add_argument('--tun', default='tun0', help='TUN interface name')
     lb.add_argument('--device', type=int, default=0, help='Capture device ID')
     lb.add_argument('--packets', type=int, default=100, help='Number of packets to process')
+
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
 

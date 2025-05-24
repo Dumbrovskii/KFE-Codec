@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import struct
+
 import time
 import logging
 
@@ -17,6 +18,7 @@ from kfe_codec import FRAME_SIZE, WIDTH, HEIGHT, CHANNELS
 
 
 logger = logging.getLogger(__name__)
+
 
 __all__ = ["packet_to_frame", "frame_to_packet", "run_loopback"]
 
@@ -83,7 +85,20 @@ def _open_tun(name: str) -> int:
     return tun_fd
 
 
-def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None:
+
+
+def run_loopback(
+    tun: str = "tun0",
+    device: int = 0,
+    packets: int = 100,
+    *,
+    periodic: bool = False,
+    os_read=os.read,
+    os_write=os.write,
+    os_close=os.close,
+) -> None:
+
+
     """Simple loopback demo using a TUN interface and HDMI capture.
 
     The function reads packets from ``tun``, converts them to frames using
@@ -109,6 +124,7 @@ def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None
 
     cap = cv2.VideoCapture(device)
     if not cap.isOpened():
+
         os.close(tun_fd)
         raise RuntimeError(f"Unable to open capture device {device}")
 
@@ -120,6 +136,7 @@ def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None
         while processed < packets:
             data = os.read(tun_fd, 65535)
             send_ts = time.monotonic()
+
             frame_bytes = packet_to_frame(data)
 
             arr = (
@@ -136,6 +153,7 @@ def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None
             received = cv2.resize(received, (WIDTH, HEIGHT))
             received = cv2.cvtColor(received, cv2.COLOR_BGR2RGB)
             packet = frame_to_packet(received.tobytes())
+
             os.write(tun_fd, packet)
             recv_ts = time.monotonic()
 

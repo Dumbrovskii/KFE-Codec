@@ -1,6 +1,7 @@
 import os
 import struct
 
+
 import pytest
 
 import types
@@ -8,6 +9,7 @@ import sys
 
 from kfe_loopback import packet_to_frame, frame_to_packet, run_loopback
 from kfe_codec import FRAME_SIZE
+
 
 
 class DummyArray:
@@ -21,6 +23,7 @@ class DummyArray:
         return self
 
 
+
 def make_dummy_cv2(frame_bytes):
     """Return a dummy cv2 module delivering ``frame_bytes`` on capture."""
 
@@ -28,11 +31,19 @@ def make_dummy_cv2(frame_bytes):
         def __init__(self, device):
             self.device = device
 
+def make_dummy_cv2(frame_bytes, *, frames=1):
+    class DummyCap:
+        def __init__(self, device):
+            self.frame = frame_bytes
+            self.frames = frames
+            self.count = 0
+
+
         def isOpened(self):
             return True
 
         def read(self):
-            return True, DummyArray(frame_bytes)
+
 
         def release(self):
             pass
@@ -48,6 +59,7 @@ def make_dummy_cv2(frame_bytes):
         destroyAllWindows=lambda: None,
     )
     return dummy_cv2
+
 
 
 def test_packet_roundtrip():
@@ -93,6 +105,7 @@ def test_run_loopback(monkeypatch):
     monkeypatch.setattr(kl.os, "read", dummy_read)
     monkeypatch.setattr(kl.os, "write", dummy_write)
 
+
     dummy_cv2 = make_dummy_cv2(frame)
     dummy_np = types.SimpleNamespace(frombuffer=lambda buf, dtype: DummyArray(buf))
 
@@ -102,3 +115,4 @@ def test_run_loopback(monkeypatch):
     kl.run_loopback(tun="tun0", device=0, packets=1)
 
     assert written and written[0] == packet
+
