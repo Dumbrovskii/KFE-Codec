@@ -54,3 +54,28 @@ for both small and multi-frame inputs.
 The CLI relies on `opencv-python` and `numpy` for capture and display
 functionality. These packages are not required for basic encoding/decoding but
 must be installed to use the `capture` or `display` commands.
+
+## Loopback demonstration
+
+The `kfe_loopback` module provides helper functions for packing network
+packets into KFE frames. It also contains a simple `run_loopback()` routine
+that demonstrates how a TUN interface can be bridged through an HDMI capture
+device. The function requires root privileges to create/attach to the TUN
+interface and an accessible video capture device.
+
+```python
+from kfe_loopback import run_loopback
+
+# Forward up to 100 packets through HDMI using tun0 and device 0
+run_loopback(tun="tun0", device=0, packets=100)
+```
+
+`packet_to_frame()` and `frame_to_packet()` can be used independently of the
+loopback demo:
+
+```python
+from kfe_loopback import packet_to_frame, frame_to_packet
+
+frame = packet_to_frame(b"demo packet")
+packet = frame_to_packet(frame)
+```
