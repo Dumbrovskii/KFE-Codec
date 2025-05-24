@@ -22,28 +22,24 @@ class DummyArray:
     def reshape(self, shape):
         return self
 
-
-
-def make_dummy_cv2(frame_bytes):
+def make_dummy_cv2(frame_bytes, *, frames=1):
     """Return a dummy cv2 module delivering ``frame_bytes`` on capture."""
 
     class DummyCap:
         def __init__(self, device):
             self.device = device
-
-def make_dummy_cv2(frame_bytes, *, frames=1):
-    class DummyCap:
-        def __init__(self, device):
             self.frame = frame_bytes
             self.frames = frames
             self.count = 0
-
 
         def isOpened(self):
             return True
 
         def read(self):
-
+            if self.count >= self.frames:
+                return False, None
+            self.count += 1
+            return True, DummyArray(self.frame)
 
         def release(self):
             pass
