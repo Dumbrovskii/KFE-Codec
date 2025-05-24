@@ -58,6 +58,23 @@ The CLI relies on `opencv-python` and `numpy` for capture and display
 functionality. These packages are not required for basic encoding/decoding but
 must be installed to use the `capture` or `display` commands.
 
+
+## Creating tun0 with ip tuntap
+
+On Linux you can manually create the `tun0` TUN interface using the `ip` command. These steps require root privileges, so prefix them with `sudo` or run as root:
+
+```bash
+sudo ip tuntap add dev tun0 mode tun
+sudo ip addr add 10.0.0.1/24 dev tun0
+sudo ip link set tun0 up
+```
+
+Once the interface is up you can try the loopback demo:
+
+```bash
+python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
+```
+
 ## Loopback demonstration
 
 The `kfe_loopback` module provides helper functions for packing network
