@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import os
 import struct
+
+import time
+from typing import List
 from typing import Generator
+
 
 from kfe_codec import FRAME_SIZE, WIDTH, HEIGHT, CHANNELS
 
@@ -79,7 +83,17 @@ def _open_tun(name: str) -> int:
     return tun_fd
 
 
-def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None:
+
+def run_loopback(
+    tun: str = "tun0",
+    device: int = 0,
+    packets: int = 100,
+    *,
+    os_read=os.read,
+    os_write=os.write,
+    os_close=os.close,
+) -> None:
+
     """Simple loopback demo using a TUN interface and HDMI capture.
 
     The function reads packets from ``tun``, converts them to frames using
@@ -105,13 +119,19 @@ def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None
 
     cap = cv2.VideoCapture(device)
     if not cap.isOpened():
-        os.close(tun_fd)
+
+        os_close(tun_fd)
         raise RuntimeError(f"Unable to open capture device {device}")
 
     try:
+        rtts: List[float] = []
+        bytes_total = 0
+        start_time = time.time()
         processed = 0
         while processed < packets:
-            data = os.read(tun_fd, 65535)
+            send_ts = time.time()
+            data = os_read(tun_fd, 65535)
+
             frame_bytes = packet_to_frame(data)
 
             arr = (
@@ -128,9 +148,28 @@ def run_loopback(tun: str = "tun0", device: int = 0, packets: int = 100) -> None
             received = cv2.resize(received, (WIDTH, HEIGHT))
             received = cv2.cvtColor(received, cv2.COLOR_BGR2RGB)
             packet = frame_to_packet(received.tobytes())
-            os.write(tun_fd, packet)
+
+            os_write(tun_fd, packet)
+            rtts.append(time.time() - send_ts)
+            bytes_total += len(packet)
             processed += 1
+
+        elapsed = time.time() - start_time
+        if rtts:
+            rtt_min = min(rtts)
+            rtt_avg = sum(rtts) / len(rtts)
+            rtt_max = max(rtts)
+        else:
+            rtt_min = rtt_avg = rtt_max = 0.0
+        throughput = bytes_total / elapsed if elapsed > 0 else 0.0
+
+        print(
+            f"Processed: {processed} packets | "
+            f"RTT min/avg/max: {rtt_min:.4f}/{rtt_avg:.4f}/{rtt_max:.4f} s | "
+            f"Throughput: {throughput:.2f} B/s"
+        )
     finally:
         cap.release()
         cv2.destroyAllWindows()
-        os.close(tun_fd)
+        os_close(tun_fd)
+
