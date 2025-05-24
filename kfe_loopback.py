@@ -12,11 +12,13 @@ import os
 import struct
 
 import time
-from typing import List
-from typing import Generator
-
+import logging
 
 from kfe_codec import FRAME_SIZE, WIDTH, HEIGHT, CHANNELS
+
+
+logger = logging.getLogger(__name__)
+
 
 __all__ = ["packet_to_frame", "frame_to_packet", "run_loopback"]
 
@@ -84,6 +86,7 @@ def _open_tun(name: str) -> int:
 
 
 
+
 def run_loopback(
     tun: str = "tun0",
     device: int = 0,
@@ -94,6 +97,7 @@ def run_loopback(
     os_write=os.write,
     os_close=os.close,
 ) -> None:
+
 
     """Simple loopback demo using a TUN interface and HDMI capture.
 
@@ -111,9 +115,6 @@ def run_loopback(
     packets:
         Maximum number of packets to process. The function exits after this
         many packets have been handled.
-    periodic:
-        If ``True``, print metrics after each processed packet instead of only
-        once at the end.
     """
 
     import cv2
@@ -124,17 +125,17 @@ def run_loopback(
     cap = cv2.VideoCapture(device)
     if not cap.isOpened():
 
-        os_close(tun_fd)
+        os.close(tun_fd)
         raise RuntimeError(f"Unable to open capture device {device}")
 
+    rtts: list[float] = []
+    total_bytes = 0
+    start_time = time.monotonic()
     try:
-        rtts: List[float] = []
-        bytes_total = 0
-        start_time = time.monotonic()
         processed = 0
         while processed < packets:
+            data = os.read(tun_fd, 65535)
             send_ts = time.monotonic()
-            data = os_read(tun_fd, 65535)
 
             frame_bytes = packet_to_frame(data)
 
@@ -153,38 +154,24 @@ def run_loopback(
             received = cv2.cvtColor(received, cv2.COLOR_BGR2RGB)
             packet = frame_to_packet(received.tobytes())
 
-            os_write(tun_fd, packet)
-            rtts.append(time.monotonic() - send_ts)
-            bytes_total += len(packet)
+            os.write(tun_fd, packet)
+            recv_ts = time.monotonic()
+
+            rtts.append(recv_ts - send_ts)
+            total_bytes += len(packet)
             processed += 1
-            if periodic:
-                elapsed = time.monotonic() - start_time
-                rtt_min = min(rtts)
-                rtt_avg = sum(rtts) / len(rtts)
-                rtt_max = max(rtts)
-                throughput = bytes_total / elapsed if elapsed > 0 else 0.0
-                print(
-                    f"Processed: {processed} packets | "
-                    f"RTT min/avg/max: {rtt_min:.4f}/{rtt_avg:.4f}/{rtt_max:.4f} s | "
-                    f"Throughput: {throughput:.2f} B/s"
-                )
-
-        elapsed = time.monotonic() - start_time
-        if rtts:
-            rtt_min = min(rtts)
-            rtt_avg = sum(rtts) / len(rtts)
-            rtt_max = max(rtts)
-        else:
-            rtt_min = rtt_avg = rtt_max = 0.0
-        throughput = bytes_total / elapsed if elapsed > 0 else 0.0
-
-        print(
-            f"Processed: {processed} packets | "
-            f"RTT min/avg/max: {rtt_min:.4f}/{rtt_avg:.4f}/{rtt_max:.4f} s | "
-            f"Throughput: {throughput:.2f} B/s"
-        )
     finally:
         cap.release()
         cv2.destroyAllWindows()
-        os_close(tun_fd)
+        os.close(tun_fd)
 
+    total_time = time.monotonic() - start_time
+    if rtts and total_time > 0:
+        logger.info(
+            "Processed %d packets: RTT min/avg/max %.6f/%.6f/%.6f s, throughput %.1f B/s",
+            processed,
+            min(rtts),
+            sum(rtts) / len(rtts),
+            max(rtts),
+            total_bytes / total_time,
+        )

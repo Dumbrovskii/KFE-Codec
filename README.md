@@ -35,8 +35,10 @@ python kfe_codec.py capture capture.kfe --device 0 --frames 60
 # Display a container in a window or write it to a video file
 python kfe_codec.py display capture.kfe --fps 30
 
-# Forward network packets through HDMI loopback using tun0
-python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
+
+# Forward packets through HDMI using a TUN interface and capture device 0
+sudo python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
+
 ```
 
 Use the `-v` option for verbose logging.
@@ -59,22 +61,6 @@ functionality. These packages are not required for basic encoding/decoding but
 must be installed to use the `capture` or `display` commands.
 
 
-## Creating tun0 with ip tuntap
-
-On Linux you can manually create the `tun0` TUN interface using the `ip` command. These steps require root privileges, so prefix them with `sudo` or run as root:
-
-```bash
-sudo ip tuntap add dev tun0 mode tun
-sudo ip addr add 10.0.0.1/24 dev tun0
-sudo ip link set tun0 up
-```
-
-Once the interface is up you can try the loopback demo:
-
-```bash
-python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
-```
-
 ## Loopback demonstration
 
 The `kfe_loopback` module provides helper functions for packing network
@@ -84,10 +70,11 @@ device. The function requires root privileges to create/attach to the TUN
 interface and an accessible video capture device.
 
 
-### Preparing a TUN interface
+### Creating a TUN interface
 
-On Linux the following commands create a TUN device named ``tun0`` and assign
-an address to it (root privileges required):
+On Linux a persistent TUN device can be created as follows (root privileges are
+required):
+
 
 ```bash
 sudo ip tuntap add dev tun0 mode tun
@@ -95,14 +82,17 @@ sudo ip addr add 10.0.0.1/24 dev tun0
 sudo ip link set tun0 up
 ```
 
-After the interface is created, packets sent to ``tun0`` can be forwarded
-through the HDMI loopback using either the Python API above or the CLI
-command. The loopback routine prints measured round-trip time (RTT) and
-throughput statistics after processing the requested number of packets:
+
+### Running the loopback demo
+
+The loopback routine can be executed directly from the command line via the
+`loopback` subcommand:
 
 ```bash
-python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
+sudo python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
 ```
+It will forward up to 100 packets through HDMI and print RTT and throughput
+statistics when finished.
 
 
 ```python
