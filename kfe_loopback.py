@@ -89,6 +89,7 @@ def run_loopback(
     device: int = 0,
     packets: int = 100,
     *,
+    periodic: bool = False,
     os_read=os.read,
     os_write=os.write,
     os_close=os.close,
@@ -110,6 +111,9 @@ def run_loopback(
     packets:
         Maximum number of packets to process. The function exits after this
         many packets have been handled.
+    periodic:
+        If ``True``, print metrics after each processed packet instead of only
+        once at the end.
     """
 
     import cv2
@@ -126,10 +130,10 @@ def run_loopback(
     try:
         rtts: List[float] = []
         bytes_total = 0
-        start_time = time.time()
+        start_time = time.monotonic()
         processed = 0
         while processed < packets:
-            send_ts = time.time()
+            send_ts = time.monotonic()
             data = os_read(tun_fd, 65535)
 
             frame_bytes = packet_to_frame(data)
@@ -150,11 +154,22 @@ def run_loopback(
             packet = frame_to_packet(received.tobytes())
 
             os_write(tun_fd, packet)
-            rtts.append(time.time() - send_ts)
+            rtts.append(time.monotonic() - send_ts)
             bytes_total += len(packet)
             processed += 1
+            if periodic:
+                elapsed = time.monotonic() - start_time
+                rtt_min = min(rtts)
+                rtt_avg = sum(rtts) / len(rtts)
+                rtt_max = max(rtts)
+                throughput = bytes_total / elapsed if elapsed > 0 else 0.0
+                print(
+                    f"Processed: {processed} packets | "
+                    f"RTT min/avg/max: {rtt_min:.4f}/{rtt_avg:.4f}/{rtt_max:.4f} s | "
+                    f"Throughput: {throughput:.2f} B/s"
+                )
 
-        elapsed = time.time() - start_time
+        elapsed = time.monotonic() - start_time
         if rtts:
             rtt_min = min(rtts)
             rtt_avg = sum(rtts) / len(rtts)
