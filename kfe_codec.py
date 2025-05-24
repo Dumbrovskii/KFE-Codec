@@ -200,6 +200,7 @@ def main(argv=None):
     loop.add_argument('--tun', default='tun0', help='TUN interface name')
     loop.add_argument('--device', type=int, default=0, help='Capture device ID')
     loop.add_argument('--packets', type=int, default=100, help='Number of packets to process')
+    loop.add_argument('--periodic', action='store_true', help='Print metrics after each packet')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
 
@@ -216,7 +217,12 @@ def main(argv=None):
         display(args.input, output=args.output, fps=args.fps, window=args.window)
     elif args.command == 'loopback':
         from kfe_loopback import run_loopback
-        run_loopback(tun=args.tun, device=args.device, packets=args.packets)
+        run_loopback(
+            tun=args.tun,
+            device=args.device,
+            packets=args.packets,
+            periodic=args.periodic,
+        )
 
 
 if __name__ == '__main__':
