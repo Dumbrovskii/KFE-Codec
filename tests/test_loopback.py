@@ -1,11 +1,13 @@
 import os
 import struct
+
 import sys
 import types
 
 import pytest
 
 from kfe_loopback import packet_to_frame, frame_to_packet, run_loopback
+
 from kfe_codec import FRAME_SIZE
 
 
@@ -96,3 +98,4 @@ def test_run_loopback(monkeypatch):
     )
 
     assert written == [packet]
+

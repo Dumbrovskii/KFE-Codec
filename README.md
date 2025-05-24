@@ -66,6 +66,7 @@ that demonstrates how a TUN interface can be bridged through an HDMI capture
 device. The function requires root privileges to create/attach to the TUN
 interface and an accessible video capture device.
 
+
 ### Preparing a TUN interface
 
 On Linux the following commands create a TUN device named ``tun0`` and assign
@@ -85,6 +86,7 @@ throughput statistics after processing the requested number of packets:
 ```bash
 python kfe_codec.py loopback --tun tun0 --device 0 --packets 100
 ```
+
 
 ```python
 from kfe_loopback import run_loopback

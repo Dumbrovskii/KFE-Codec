@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import os
 import struct
+
 import time
 from typing import List
+from typing import Generator
+
 
 from kfe_codec import FRAME_SIZE, WIDTH, HEIGHT, CHANNELS
 
@@ -80,6 +83,7 @@ def _open_tun(name: str) -> int:
     return tun_fd
 
 
+
 def run_loopback(
     tun: str = "tun0",
     device: int = 0,
@@ -89,6 +93,7 @@ def run_loopback(
     os_write=os.write,
     os_close=os.close,
 ) -> None:
+
     """Simple loopback demo using a TUN interface and HDMI capture.
 
     The function reads packets from ``tun``, converts them to frames using
@@ -114,6 +119,7 @@ def run_loopback(
 
     cap = cv2.VideoCapture(device)
     if not cap.isOpened():
+
         os_close(tun_fd)
         raise RuntimeError(f"Unable to open capture device {device}")
 
@@ -125,6 +131,7 @@ def run_loopback(
         while processed < packets:
             send_ts = time.time()
             data = os_read(tun_fd, 65535)
+
             frame_bytes = packet_to_frame(data)
 
             arr = (
@@ -141,6 +148,7 @@ def run_loopback(
             received = cv2.resize(received, (WIDTH, HEIGHT))
             received = cv2.cvtColor(received, cv2.COLOR_BGR2RGB)
             packet = frame_to_packet(received.tobytes())
+
             os_write(tun_fd, packet)
             rtts.append(time.time() - send_ts)
             bytes_total += len(packet)
@@ -164,3 +172,4 @@ def run_loopback(
         cap.release()
         cv2.destroyAllWindows()
         os_close(tun_fd)
+
