@@ -185,3 +185,55 @@ def test_run_loopback_periodic(monkeypatch, capsys):
     assert "Processed: 1 packets" in out_lines[0]
     assert "Processed: 2 packets" in out_lines[-1]
 
+
+def test_run_loopback_pipe(monkeypatch, capsys):
+    packet = b"pipe"
+    frame = b"f" + packet
+
+    r_fd, w_fd = os.pipe()
+    os.write(w_fd, packet)
+
+    dummy_cv2 = make_dummy_cv2(frame)
+    dummy_np = types.SimpleNamespace(frombuffer=lambda buf, dtype: DummyArray(buf))
+
+    monkeypatch.setitem(sys.modules, "cv2", dummy_cv2)
+    monkeypatch.setitem(sys.modules, "numpy", dummy_np)
+
+    monkeypatch.setattr("kfe_loopback._open_tun", lambda name: r_fd)
+    monkeypatch.setattr("kfe_loopback.packet_to_frame", lambda pkt: b"f" + pkt)
+    monkeypatch.setattr("kfe_loopback.frame_to_packet", lambda fr: fr[1:])
+
+    times = [0.0, 1.0, 1.2, 2.0]
+
+    def fake_monotonic():
+        return times.pop(0)
+
+    monkeypatch.setattr("kfe_loopback.time.monotonic", fake_monotonic)
+
+    written = []
+
+    def os_read(fd, n):
+        return os.read(r_fd, n)
+
+    def os_write(fd, data):
+        written.append(data)
+        return os.write(w_fd, data)
+
+    def os_close(fd):
+        os.close(r_fd)
+        os.close(w_fd)
+
+    run_loopback(
+        tun="tun0",
+        device=0,
+        packets=1,
+        os_read=os_read,
+        os_write=os_write,
+        os_close=os_close,
+    )
+
+    out = capsys.readouterr().out.strip().splitlines()[-1]
+    assert written == [packet]
+    assert "Processed: 1 packets" in out
+    assert "Throughput" in out
+
